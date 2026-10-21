@@ -1,0 +1,15 @@
+  :root {
+  --sh-green: #2f5d50;        /* verde principal: botones y footer */
+  --sh-green-dark: #1d3d30;   /* títulos y texto principal */
+  --sh-bg-hero: #e6e9e0;      /* fondo del hero (desktop) */
+  --sh-bg-soft: #f4f5f1;      /* fondo de secciones claras */
+  --sh-text-muted: #6e7f76;
+  --sh-border: #d3d8cd;
+  --sh-chip-green: #dde8e2;   /* etiqueta de categoría / "Primero" */
+  --sh-chip-yellow: #f7ebd1;  /* etiqueta de estado / "Después" */
+  --sh-chip-grey: #e3e6ed;    /* etiqueta neutra / "Al final" */
+  --sh-radius: 10px;
+
+  --sh-font-heading: 'Bricolage Grotesque', system-ui, sans-serif;
+  --sh-font-body: 'Instrument Sans', system-ui, sans-serif;
+}
