@@ -12,12 +12,13 @@ export default function useForm(initialValues, validate, onSubmit) {
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  // Cambia un campo por nombre (útil para campos que no son inputs, como la foto)
+  const setValue = (name, value) => {
     setValues((prev) => ({ ...prev, [name]: value }));
-    // Limpia el error del campo mientras el usuario corrige
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
   };
+
+  const handleChange = (e) => setValue(e.target.name, e.target.value);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,5 +37,5 @@ export default function useForm(initialValues, validate, onSubmit) {
     }
   };
 
-  return { values, errors, submitError, submitting, handleChange, handleSubmit };
+  return { values, errors, submitError, submitting, handleChange, setValue, handleSubmit };
 }

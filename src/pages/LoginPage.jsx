@@ -1,13 +1,16 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/auth/AuthLayout.jsx';
 import FormField from '../components/auth/FormField.jsx';
 import useForm from '../hooks/useForm.js';
 import { validateEmail, required } from '../utils/validators.js';
-import { login } from '../services/authService.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 // RQF002 - Iniciar sesión
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+  const redirectTo = location.state?.from?.pathname ?? '/explorar'; // vuelve a donde iba el usuario
 
   const validate = (v) => ({
     email: validateEmail(v.email),
@@ -19,7 +22,7 @@ export default function LoginPage() {
     validate,
     async (v) => {
       await login(v);
-      navigate('/'); // TODO: redirigir al dashboard cuando exista
+      navigate(redirectTo, { replace: true });
     }
   );
 

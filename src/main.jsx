@@ -6,12 +6,16 @@ import './styles/variables.css';
 import './styles/global.css';
 import './styles/landing.css';
 import './styles/auth.css';
+import './styles/app.css';
+import { AuthProvider } from './context/AuthContext.jsx';
 import App from './App.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

@@ -12,7 +12,7 @@ export default function Footer() {
           <Link to="/terminos">Términos</Link>
           <Link to="/privacidad">Privacidad</Link>
           <Link to="/contacto">Contacto</Link>
-        </nav>  
+        </nav>
       </div>
     </footer>
   );

@@ -99,17 +99,3 @@
   .auth__link-center, .auth__note { color: var(--sh-text-muted); opacity: 1; }
   .auth__link-center a { color: var(--sh-text-muted); }
 }
-
-/* ===== Solo tablet (768px a 991px): contenido centrado y formulario más ancho ===== */
-@media (min-width: 768px) and (max-width: 991.98px) {
-  .auth {
-    justify-content: center;   /* centra verticalmente marca + formulario */
-    padding: 2rem 0;           /* evita que se pegue a los bordes si el contenido es alto */
-  }
-  .auth__brand-panel { padding-top: 0; }
-  .auth__form-panel {
-    flex: 0 0 auto;            /* deja de estirarse para que el centrado funcione */
-    padding-bottom: 0;
-  }
-  .auth__form-wrap { max-width: 500px; }  /* antes 400px: más ancho horizontalmente */
-}

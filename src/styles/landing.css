@@ -1,12 +1,7 @@
 /* ===== Navbar ===== */
 .sh-navbar { background: #fff; border-bottom: 1px solid var(--sh-border); }
 .sh-logo { height: 36px; width: auto; }
-@media (max-width: 575.98px) {
-  .sh-navbar .btn {
-    font-size: 0.75rem;
-    padding: 0.35rem 0.65rem;
-  }
-} 
+.sh-navbar .btn { font-size: 0.875rem; padding: 0.5rem 1rem; }
 
 /* ===== Hero ===== */
 .sh-hero { background: var(--sh-bg-soft); padding: 2rem 0 1rem; }

@@ -1,4 +1,4 @@
-import logo from '../../assets/logo_white.svg';
+import logo from '../../assets/logo-white.svg';
 
 // Bloque de marca: logo + frase + descripción.
 // En escritorio vive en el panel verde izquierdo; en tablet/móvil queda arriba del formulario.
