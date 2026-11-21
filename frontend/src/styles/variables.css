@@ -1,0 +1,15 @@
+:root {
+  --sh-green: #2f5d4f;
+  --sh-green-dark: #1d3d32;
+  --sh-bg-hero: #e6e9e0;
+  --sh-bg-soft: #f3f4ef;
+  --sh-text-muted: #4a5a52;
+  --sh-border: #dfe2da;
+  --sh-chip-green: #dce8e1;
+  --sh-chip-yellow: #fbe9c6;
+  --sh-chip-grey: #e6e8e1;
+  --sh-radius: 10px;
+
+  --sh-font-heading: 'Bricolage Grotesque', system-ui, sans-serif;
+  --sh-font-body: 'Instrument Sans', system-ui, sans-serif;
+}
