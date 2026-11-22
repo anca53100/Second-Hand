@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { normalize } from '../utils/format.js';
 
-export const PAGE_SIZE = 8;
+export const PAGE_SIZE = 9;
 const INITIAL_FILTERS = { category: 'Todos', conditions: [], location: '' };
 
 export default function useItemsFilter(items = []) {

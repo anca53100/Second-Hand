@@ -14,24 +14,24 @@
 @catMuebles = c4
 @catInstrumentos = c5
 
-### Ruta de prueba (servidor y datos cargados en memoria)
+###
 GET {{baseUrl}}/health
 
-### Login usuaria (Ana) — guarda su token
+###
 # @name loginAna
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 { "email": "ana@correo.com", "password": "Usuario12345" }
 
-### Login administrador — guarda su token
+###
 # @name loginAdmin
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 { "email": "admin@secondhand.com", "password": "Admin12345" }
 
-### Login de Camilo Rojas (dueño del artículo 3) — guarda su token
+###
 # @name loginCamilo
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
@@ -43,19 +43,19 @@ Content-Type: application/json
 @admin = {{loginAdmin.response.body.$.token}}
 @camilo = {{loginCamilo.response.body.$.token}}
 
-### Login con contraseña incorrecta (401)
+###
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 { "email": "ana@correo.com", "password": "otraClave" }
 
-### Login de cuenta inactiva (403)
+###
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 { "email": "sara@correo.com", "password": "Usuario12345" }
 
-### Registro (201). Repetirlo da 409: el correo ya está registrado
+###
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
@@ -68,20 +68,20 @@ Content-Type: application/json
   "confirmPassword": "Secreta123"
 }
 
-### Registro con datos inválidos (400 con el error de cada campo)
+###
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 { "name": "", "email": "no-es-correo", "phone": "123", "location": "Marte", "password": "123" }
 
-### Mi perfil sin token (401)
+###
 GET {{baseUrl}}/users/me
 
-### Mi perfil
+###
 GET {{baseUrl}}/users/me
 Authorization: Bearer {{ana}}
 
-### Editar mi perfil
+###
 PUT {{baseUrl}}/users/me
 Authorization: Bearer {{ana}}
 Content-Type: application/json
@@ -92,58 +92,58 @@ Content-Type: application/json
   "location": "Teusaquillo"
 }
 
-### Dar de baja mi cuenta con la contraseña equivocada (400)
+###
 PATCH {{baseUrl}}/users/me/status
 Authorization: Bearer {{ana}}
 Content-Type: application/json
 
 { "status": "Inactivo", "password": "NoEsMiClave1" }
 
-### La cuenta principal del administrador no se puede dar de baja (403)
+###
 PATCH {{baseUrl}}/users/me/status
 Authorization: Bearer {{admin}}
 Content-Type: application/json
 
 { "status": "Inactivo", "password": "Admin12345" }
 
-### Lista de usuarios como usuaria (403: solo administrador)
+###
 GET {{baseUrl}}/users
 Authorization: Bearer {{ana}}
 
-### Lista de usuarios (administrador), los 7 más recientes
+###
 GET {{baseUrl}}/users?limit=7
 Authorization: Bearer {{admin}}
 
-### Reactivar a Sara (administrador)
+###
 PATCH {{baseUrl}}/users/{{sara}}/status
 Authorization: Bearer {{admin}}
 Content-Type: application/json
 
 { "status": "Activo" }
 
-### Explorar (público). Mira el encabezado X-Total-Count
+###
 GET {{baseUrl}}/items
 
-### Búsqueda y filtros: texto sin tildes, varias condiciones, orden alfabético, paginación
+###
 GET {{baseUrl}}/items?q=calculo&condition=Usado&condition=Como%20nuevo&sort=title&limit=5&page=1
 
-### Filtro por categoría y localidad
+###
 GET {{baseUrl}}/items?category=Muebles&location=Kennedy
 
-### Últimos 4 (landing)
+###
 GET {{baseUrl}}/items?limit=4&sort=recent
 
-### Detalle de un artículo
+###
 GET {{baseUrl}}/items/{{itemVictor}}
 
-### Detalle de una publicación inactiva sin sesión (404)
+###
 GET {{baseUrl}}/items/{{anaEscritorio}}
 
-### Mis publicaciones
+###
 GET {{baseUrl}}/items/mine
 Authorization: Bearer {{ana}}
 
-### Publicar artículo (la foto es una imagen PNG de 1×1 px en base64)
+###
 POST {{baseUrl}}/items
 Authorization: Bearer {{ana}}
 Content-Type: application/json
@@ -157,7 +157,7 @@ Content-Type: application/json
   "photos": ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="]
 }
 
-### Publicar en una categoría inactiva (400)
+###
 POST {{baseUrl}}/items
 Authorization: Bearer {{ana}}
 Content-Type: application/json
@@ -171,7 +171,7 @@ Content-Type: application/json
   "photos": ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="]
 }
 
-### Editar mi publicación (enviar la URL de una foto actual la conserva; la primera es la portada)
+###
 PUT {{baseUrl}}/items/{{anaCalculo}}
 Authorization: Bearer {{ana}}
 Content-Type: application/json
@@ -185,14 +185,14 @@ Content-Type: application/json
   "photos": ["/images/items/calculo.jpg"]
 }
 
-### Editar una publicación ajena (403)
+###
 PUT {{baseUrl}}/items/{{itemVictor}}
 Authorization: Bearer {{ana}}
 Content-Type: application/json
 
 { "title": "No es mío" }
 
-### Editar una publicación entregada (409)
+###
 PUT {{baseUrl}}/items/{{anaCalculadora}}
 Authorization: Bearer {{ana}}
 Content-Type: application/json
@@ -206,22 +206,22 @@ Content-Type: application/json
   "photos": ["/images/items/calculadora.jpg"]
 }
 
-### Activar mi publicación inactiva
+###
 PATCH {{baseUrl}}/items/{{anaEscritorio}}/status
 Authorization: Bearer {{ana}}
 Content-Type: application/json
 
 { "status": "Disponible" }
 
-### Mis solicitudes (la aceptada trae los datos de contacto)
+###
 GET {{baseUrl}}/requests
 Authorization: Bearer {{ana}}
 
-### Detalle de una solicitud aceptada
+###
 GET {{baseUrl}}/requests/{{solicitudAceptadaDeAna}}
 Authorization: Bearer {{ana}}
 
-### Solicitar en donación — guarda el id para que Camilo la responda
+###
 # @name solicitud
 POST {{baseUrl}}/requests
 Authorization: Bearer {{ana}}
@@ -233,7 +233,7 @@ Content-Type: application/json
   "message": "Hola, me serviría mucho para mis clases de estadística."
 }
 
-### Solicitar en intercambio (Ana ofrece su chaqueta)
+###
 POST {{baseUrl}}/requests
 Authorization: Bearer {{ana}}
 Content-Type: application/json
@@ -245,123 +245,123 @@ Content-Type: application/json
   "message": "Te ofrezco mi chaqueta impermeable a cambio del libro."
 }
 
-### Solicitar mi propio artículo (400)
+###
 POST {{baseUrl}}/requests
 Authorization: Bearer {{ana}}
 Content-Type: application/json
 
 { "itemId": "{{anaCalculo}}", "type": "Donación", "message": "Es mi propio artículo." }
 
-### Camilo ve la solicitud que le hizo Ana
+###
 GET {{baseUrl}}/requests/received
 Authorization: Bearer {{camilo}}
 
-### Camilo acepta la solicitud de Ana (el artículo pasa a "En proceso")
+###
 PATCH {{baseUrl}}/requests/{{solicitud.response.body.$.id}}
 Authorization: Bearer {{camilo}}
 Content-Type: application/json
 
 { "status": "Aceptada" }
 
-### Ana cancela su solicitud ya aceptada (el artículo vuelve a "Disponible")
+###
 PATCH {{baseUrl}}/requests/{{solicitud.response.body.$.id}}
 Authorization: Bearer {{ana}}
 Content-Type: application/json
 
 { "status": "Cancelada" }
 
-### Solicitudes que recibió Ana sobre sus publicaciones
+###
 GET {{baseUrl}}/requests/received
 Authorization: Bearer {{ana}}
 
-### Aceptar la solicitud pendiente de Laura
+###
 PATCH {{baseUrl}}/requests/{{recibidaPendiente}}
 Authorization: Bearer {{ana}}
 Content-Type: application/json
 
 { "status": "Aceptada" }
 
-### Deshacer (volver a Pendiente: el artículo vuelve a "Disponible")
+###
 PATCH {{baseUrl}}/requests/{{recibidaPendiente}}
 Authorization: Bearer {{ana}}
 Content-Type: application/json
 
 { "status": "Pendiente" }
 
-### Eliminar una solicitud pendiente (409: solo se eliminan las rechazadas o canceladas)
+###
 DELETE {{baseUrl}}/requests/{{recibidaPendiente}}
 Authorization: Bearer {{ana}}
 
-### Aceptarla otra vez
+###
 PATCH {{baseUrl}}/requests/{{recibidaPendiente}}
 Authorization: Bearer {{ana}}
 Content-Type: application/json
 
 { "status": "Aceptada" }
 
-### Marcar como entregada (el artículo pasa a "Entregado" y las demás pendientes se rechazan)
+###
 PATCH {{baseUrl}}/requests/{{recibidaPendiente}}
 Authorization: Bearer {{ana}}
 Content-Type: application/json
 
 { "status": "Entregada" }
 
-### Una entregada no se puede deshacer (409)
+###
 PATCH {{baseUrl}}/requests/{{recibidaPendiente}}
 Authorization: Bearer {{ana}}
 Content-Type: application/json
 
 { "status": "Pendiente" }
 
-### Eliminar la solicitud rechazada de Miguel (204)
+###
 DELETE {{baseUrl}}/requests/{{recibidaRechazada}}
 Authorization: Bearer {{ana}}
 
-### Todas las categorías (público)
+###
 GET {{baseUrl}}/categories
 
-### Solo las activas (para publicar y filtrar)
+###
 GET {{baseUrl}}/categories?status=Activa
 
-### Crear categoría (administrador)
+###
 POST {{baseUrl}}/categories
 Authorization: Bearer {{admin}}
 Content-Type: application/json
 
 { "name": "Electrónica" }
 
-### Crear una categoría repetida (409, sin importar tildes ni mayúsculas)
+###
 POST {{baseUrl}}/categories
 Authorization: Bearer {{admin}}
 Content-Type: application/json
 
 { "name": "LIBROS" }
 
-### Crear categoría como usuaria (403)
+###
 POST {{baseUrl}}/categories
 Authorization: Bearer {{ana}}
 Content-Type: application/json
 
 { "name": "Juguetes" }
 
-### Renombrar categoría (se refleja en sus artículos)
+###
 PUT {{baseUrl}}/categories/{{catMuebles}}
 Authorization: Bearer {{admin}}
 Content-Type: application/json
 
 { "name": "Muebles y decoración" }
 
-### Activar categoría
+###
 PATCH {{baseUrl}}/categories/{{catInstrumentos}}/status
 Authorization: Bearer {{admin}}
 Content-Type: application/json
 
 { "status": "Activa" }
 
-### Indicadores del panel
+###
 GET {{baseUrl}}/admin/stats
 Authorization: Bearer {{admin}}
 
-### Indicadores como usuaria (403)
+###
 GET {{baseUrl}}/admin/stats
 Authorization: Bearer {{ana}}
