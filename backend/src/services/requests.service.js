@@ -7,10 +7,25 @@ import {
 } from '../utils/serializers.js';
 
 const TRANSITIONS = {
-  Pendiente: ['Aceptada', 'Rechazada'],
-  Rechazada: ['Pendiente'],
-  Aceptada: ['Pendiente'],
+  owner: {
+    Pendiente: ['Aceptada', 'Rechazada'],
+    Aceptada: ['Pendiente', 'Cancelada', 'Entregada'],
+    Rechazada: ['Pendiente'],
+  },
+  requester: {
+    Pendiente: ['Cancelada'],
+    Aceptada: ['Cancelada'],
+  },
 };
+
+const ITEM_CHANGES = {
+  'Pendiente>Aceptada': { from: 'Disponible', to: 'En proceso' },
+  'Aceptada>Pendiente': { from: 'En proceso', to: 'Disponible' },
+  'Aceptada>Cancelada': { from: 'En proceso', to: 'Disponible' },
+  'Aceptada>Entregada': { from: 'En proceso', to: 'Entregado' },
+};
+
+const HIDEABLE = ['Rechazada', 'Cancelada'];
 
 const NEWEST_FIRST = { createdAt: -1, _id: 1 };
 const isId = (value) => typeof value === 'string' && value.trim() !== '';
@@ -84,57 +99,73 @@ async function findReceived(id, user) {
   return request;
 }
 
-export async function respondToRequest(id, body, user) {
+async function explainFailedReservation(itemId) {
+  const item = await Item.findById(itemId, { status: 1 });
+  if (item?.status === 'Inactivo') return new HttpError(409, 'Activa la publicación antes de aceptar la solicitud.');
+  if (item?.status === 'En proceso') return new HttpError(409, 'Esta publicación ya tiene una solicitud aceptada.');
+  return new HttpError(409, 'Esta publicación ya no está disponible.');
+}
+
+export async function updateRequestStatus(id, body, user) {
   const next = body?.status;
   if (!REQUEST_STATUS.includes(next)) {
-    throw new HttpError(400, 'El estado debe ser "Pendiente", "Aceptada" o "Rechazada".', { status: 'Estado no válido.' });
+    throw new HttpError(400, `El estado debe ser uno de: ${REQUEST_STATUS.join(', ')}.`, { status: 'Estado no válido.' });
   }
 
-  const request = await findReceived(id, user);
+  const request = await Request.findOne({
+    _id: String(id),
+    $or: [{ ownerId: user.id, hiddenForOwner: false }, { requesterId: user.id }],
+  });
+  if (!request) throw new HttpError(404, 'No encontramos la solicitud.');
+
+  const role = request.ownerId === user.id ? 'owner' : 'requester';
   const previous = request.status;
-  if (!TRANSITIONS[previous].includes(next)) {
+  if (!TRANSITIONS[role][previous]?.includes(next)) {
+    if (role === 'requester' && next !== 'Cancelada') {
+      throw new HttpError(403, 'Solo quien publicó el artículo puede responder la solicitud.');
+    }
     throw new HttpError(409, `No puedes pasar una solicitud de "${previous}" a "${next}".`);
   }
 
   const changes = { status: next };
-  let itemRollback = null;
+  if (next === 'Aceptada') changes.acceptedAt = new Date();
+  if (next === 'Pendiente') changes.acceptedAt = null;
+  if (next === 'Cancelada') changes.cancelledBy = role;
 
-  if (next === 'Aceptada') {
-    const reserved = await Item.updateOne({ _id: request.itemId, status: 'Disponible' }, { status: 'En proceso' });
-    if (!reserved.modifiedCount) {
-      const item = await Item.findById(request.itemId, { status: 1 });
-      if (item?.status === 'Inactivo') throw new HttpError(409, 'Activa la publicación antes de aceptar la solicitud.');
-      if (item?.status === 'En proceso') throw new HttpError(409, 'Esta publicación ya tiene una solicitud aceptada.');
-      throw new HttpError(409, 'Esta publicación ya no está disponible.');
+  const itemChange = ITEM_CHANGES[`${previous}>${next}`];
+  let itemChanged = false;
+  if (itemChange) {
+    const result = await Item.updateOne({ _id: request.itemId, status: itemChange.from }, { status: itemChange.to });
+    itemChanged = result.modifiedCount > 0;
+    if (!itemChanged && next === 'Aceptada') throw await explainFailedReservation(request.itemId);
+    if (!itemChanged && next === 'Entregada') {
+      throw new HttpError(409, 'La publicación cambió de estado. Recarga la página e intenta de nuevo.');
     }
-    changes.acceptedAt = new Date();
-    itemRollback = { from: 'En proceso', to: 'Disponible' };
-  }
-
-  if (previous === 'Aceptada' && next === 'Pendiente') {
-    const released = await Item.updateOne({ _id: request.itemId, status: 'En proceso' }, { status: 'Disponible' });
-    changes.acceptedAt = null;
-    if (released.modifiedCount) itemRollback = { from: 'Disponible', to: 'En proceso' };
   }
 
   const updated = await Request.findOneAndUpdate(
     { _id: request.id, status: previous },
     changes,
     { returnDocument: 'after' },
-  ).populate(RECEIVED_REQUEST_POPULATE);
+  ).populate(role === 'owner' ? RECEIVED_REQUEST_POPULATE : MY_REQUEST_POPULATE);
 
   if (!updated) {
-    if (itemRollback) {
-      await Item.updateOne({ _id: request.itemId, status: itemRollback.from }, { status: itemRollback.to });
-    }
+    if (itemChanged) await Item.updateOne({ _id: request.itemId, status: itemChange.to }, { status: itemChange.from });
     throw new HttpError(409, 'La solicitud cambió mientras respondías. Recarga la página e intenta de nuevo.');
   }
-  return serializeReceivedRequest(updated);
+
+  if (next === 'Entregada') {
+    await Request.updateMany({ itemId: request.itemId, status: 'Pendiente' }, { status: 'Rechazada' });
+  }
+
+  return role === 'owner' ? serializeReceivedRequest(updated) : serializeMyRequest(updated);
 }
 
 export async function deleteReceivedRequest(id, user) {
   const request = await findReceived(id, user);
-  if (request.status !== 'Rechazada') throw new HttpError(409, 'Solo puedes eliminar solicitudes rechazadas.');
+  if (!HIDEABLE.includes(request.status)) {
+    throw new HttpError(409, 'Solo puedes eliminar solicitudes rechazadas o canceladas.');
+  }
 
   await Request.updateOne({ _id: request.id }, { hiddenForOwner: true });
 }

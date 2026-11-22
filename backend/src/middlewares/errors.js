@@ -12,7 +12,7 @@ export function errorHandler(err, req, res, next) {
     return res.status(400).json({ message: 'El cuerpo de la petición no es un JSON válido.' });
   }
   if (err.type === 'entity.too.large') {
-    return res.status(413).json({ message: 'La petición es demasiado grande. Usa una imagen más liviana.' });
+    return res.status(413).json({ message: 'La petición es demasiado grande. Usa imágenes más livianas o menos fotos.' });
   }
 
   if (err.code === 11000) {

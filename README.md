@@ -173,6 +173,7 @@ URL base: `http://localhost:3000/api` · Documentación interactiva: `http://loc
 | POST | `/auth/reset-password` | Guarda la contraseña nueva con el código del enlace | Público |
 | GET | `/users/me` | Perfil del usuario actual | Autenticado |
 | PUT | `/users/me` | Actualiza el perfil | Autenticado |
+| PATCH | `/users/me/status` | Da de baja la cuenta propia (pide la contraseña) | Autenticado |
 | GET | `/users` | Lista las cuentas (`?email=` busca una) | Admin |
 | PATCH | `/users/:id/status` | Activa o inactiva una cuenta | Admin |
 | PATCH | `/users/:id/role` | Da o quita permisos de administrador | Admin |
@@ -186,8 +187,8 @@ URL base: `http://localhost:3000/api` · Documentación interactiva: `http://loc
 | POST | `/requests` | Solicita un artículo | Autenticado |
 | GET | `/requests/received` | Solicitudes recibidas | Autenticado |
 | GET | `/requests/:id` | Detalle de una solicitud | Autenticado |
-| PATCH | `/requests/:id` | Acepta o rechaza una solicitud | Autenticado |
-| DELETE | `/requests/:id` | Elimina una solicitud recibida | Autenticado |
+| PATCH | `/requests/:id` | Cambia el estado de una solicitud (ver abajo) | Autenticado |
+| DELETE | `/requests/:id` | Quita de la lista una solicitud recibida rechazada o cancelada | Autenticado |
 | GET | `/categories` | Lista las categorías | Público |
 | POST | `/categories` | Crea una categoría | Admin |
 | PUT | `/categories/:id` | Edita una categoría | Admin |
@@ -195,6 +196,41 @@ URL base: `http://localhost:3000/api` · Documentación interactiva: `http://loc
 | GET | `/admin/stats` | Estadísticas del panel | Admin |
 
 Las rutas protegidas requieren el encabezado `Authorization: Bearer <token>`. **Admin** son las cuentas con rol de administrador. Una cuenta inactiva no puede iniciar sesión y sus artículos dejan de mostrarse.
+
+### Dar de baja la cuenta
+
+`PATCH /users/me/status` con `{ "status": "Inactivo", "password": "…" }` deja la cuenta inactiva, igual que cuando la inactiva un administrador: la sesión se cierra, no se puede volver a entrar y sus publicaciones dejan de mostrarse. Solo un administrador puede reactivarla. Si la contraseña falta o no es correcta, responde 400. La cuenta principal del administrador no se puede dar de baja (403).
+
+### Estados de una solicitud
+
+| Quién | Cambio | Efecto en el artículo |
+|-------|--------|-----------------------|
+| Dueño del artículo | Pendiente → Aceptada | Disponible → En proceso |
+| Dueño del artículo | Pendiente → Rechazada | — |
+| Dueño del artículo | Aceptada → Pendiente (deshacer) | En proceso → Disponible |
+| Dueño del artículo | Rechazada → Pendiente (deshacer) | — |
+| Dueño del artículo | Aceptada → Cancelada (cancelar la entrega) | En proceso → Disponible |
+| Dueño del artículo | Aceptada → Entregada | En proceso → Entregado; las demás solicitudes pendientes del artículo pasan a Rechazada |
+| Quien pidió | Pendiente o Aceptada → Cancelada | Si estaba aceptada, En proceso → Disponible |
+
+Entregada y Cancelada son estados finales. El campo `cancelledBy` dice quién canceló (`requester` u `owner`). Quien pidió ve los datos de contacto del dueño mientras la solicitud está Aceptada o Entregada. En la app, aceptar, marcar como entregado y cancelar una entrega piden confirmación.
+
+### Cuándo se ve una publicación
+
+Explorar, la búsqueda y la página de inicio solo muestran publicaciones **Disponible** de cuentas activas. Nada se borra de la base: lo que deja de mostrarse sigue en Mis publicaciones del dueño y en Mis solicitudes de quien la pidió.
+
+| Estado del artículo | Cuándo pasa | ¿Sale en Explorar? | ¿Recibe solicitudes? |
+|---------------------|-------------|--------------------|----------------------|
+| Disponible | Al publicar, o cuando una aceptación se deshace o se cancela | Sí | Sí, de varias personas a la vez |
+| En proceso | El dueño acepta una solicitud | No (el enlace directo sigue abriendo) | No |
+| Entregado | El dueño marca la solicitud aceptada como entregada | No (el enlace directo sigue abriendo) | No, para siempre |
+| Inactivo | El dueño la inactiva, o la cuenta del dueño queda inactiva | No (solo la ven el dueño y los administradores) | No |
+
+Recibir una solicitud no cambia el artículo: sigue Disponible hasta que el dueño acepta una.
+
+### Fotos de un artículo
+
+Cada publicación lleva de 1 a 5 fotos (`photos` en `POST /items` y `PUT /items/:id`); la primera es la portada. El navegador reduce cada foto a 1000 px en JPG antes de enviarla, así que cinco fotos caben en el límite de 4,5 MB por petición de Vercel. Al editar, enviar la URL de una foto actual la conserva y omitirla la quita. Las listas solo devuelven la portada; el detalle devuelve todas.
 
 ## 7. Estructura del proyecto
 

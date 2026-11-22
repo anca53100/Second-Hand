@@ -16,8 +16,8 @@ export async function listReceivedRequests(req, res) {
   res.json(await requestsService.listReceivedRequests(req.user));
 }
 
-export async function respondToRequest(req, res) {
-  res.json(await requestsService.respondToRequest(req.params.id, req.body, req.user));
+export async function updateRequestStatus(req, res) {
+  res.json(await requestsService.updateRequestStatus(req.params.id, req.body, req.user));
 }
 
 export async function deleteReceivedRequest(req, res) {

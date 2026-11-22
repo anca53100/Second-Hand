@@ -29,6 +29,7 @@ const USER_EXAMPLE = {
   photo: null,
   instagram: '',
   role: 'user',
+  isMainAdmin: false,
   status: 'Activo',
   memberSince: '2026-07-01',
   stats: { publications: 5, requests: 3 },
@@ -149,6 +150,7 @@ const schemas = {
       photo: { type: 'string', nullable: true, description: 'Foto de perfil como data URL (JPG o PNG)' },
       instagram: { type: 'string' },
       role: { type: 'string', enum: ROLES },
+      isMainAdmin: { type: 'boolean', description: 'true solo en admin@secondhand.com, que no se puede dar de baja' },
       status: { type: 'string', enum: USER_STATUS },
       memberSince: { type: 'string', format: 'date', description: 'Fecha de registro (AAAA-MM-DD)' },
       stats: ref('Stats'),
@@ -191,6 +193,14 @@ const schemas = {
       bio: { type: 'string', maxLength: 300 },
       instagram: { type: 'string', maxLength: 50 },
       photo: { type: 'string', nullable: true, description: 'Data URL JPG/PNG de máximo 1 MB. null quita la foto.' },
+    },
+  },
+  DeactivateInput: {
+    type: 'object',
+    required: ['status', 'password'],
+    properties: {
+      status: { type: 'string', enum: ['Inactivo'] },
+      password: { type: 'string', description: 'Contraseña actual, para confirmar la baja' },
     },
   },
   AdminUser: {
@@ -267,7 +277,7 @@ const schemas = {
   },
   ItemInput: {
     type: 'object',
-    required: ['title', 'category', 'condition', 'description', 'location', 'photo'],
+    required: ['title', 'category', 'condition', 'description', 'location', 'photos'],
     properties: {
       title: { type: 'string', maxLength: 80 },
       category: { type: 'string', description: 'Nombre de una categoría activa' },
@@ -278,9 +288,12 @@ const schemas = {
         description: 'Mínimo 20 caracteres. Los párrafos se separan con una línea en blanco (también acepta un arreglo de párrafos).',
       },
       location: { type: 'string', enum: LOCALITIES },
-      photo: {
-        type: 'string',
-        description: 'Data URL JPG/PNG de máximo 5 MB. Al editar, enviar la URL de la imagen actual la conserva.',
+      photos: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 5,
+        items: { type: 'string' },
+        description: 'De 1 a 5 fotos; la primera es la portada. Cada foto nueva es un data URL JPG/PNG de máximo 5 MB. Al editar, enviar la URL de una imagen actual la conserva y omitirla la quita.',
       },
     },
   },
@@ -314,11 +327,12 @@ const schemas = {
       counterpart: { type: 'string', description: 'Nombre del dueño del artículo' },
       date: { type: 'string', format: 'date' },
       status: { type: 'string', enum: REQUEST_STATUS },
+      cancelledBy: { type: 'string', enum: ['requester', 'owner'], nullable: true, description: 'Quién canceló, si status = Cancelada' },
       note: { type: 'string', description: 'Texto de ayuda según el estado' },
       message: { type: 'string' },
       offeredTitle: { type: 'string', nullable: true, description: 'En intercambios: título del artículo ofrecido' },
-      acceptedAt: { type: 'string', format: 'date', description: 'Solo si status = Aceptada' },
-      contact: ref('Contact'),
+      acceptedAt: { type: 'string', format: 'date', description: 'Solo si status = Aceptada o Entregada' },
+      contact: { ...ref('Contact'), description: 'Solo si status = Aceptada o Entregada' },
     },
   },
   RequestInput: {
@@ -346,6 +360,7 @@ const schemas = {
       type: { type: 'string', enum: REQUEST_TYPES },
       offeredTitle: { type: 'string', nullable: true },
       status: { type: 'string', enum: REQUEST_STATUS },
+      cancelledBy: { type: 'string', enum: ['requester', 'owner'], nullable: true, description: 'Quién canceló, si status = Cancelada' },
       message: { type: 'string' },
       date: { type: 'string', format: 'date' },
     },
@@ -357,7 +372,8 @@ const schemas = {
       status: {
         type: 'string',
         enum: REQUEST_STATUS,
-        description: 'Pendiente → Aceptada o Rechazada. "Pendiente" deshace una aceptada o rechazada.',
+        description: 'Dueño del artículo: Pendiente → Aceptada o Rechazada; Aceptada → Entregada, Cancelada o Pendiente '
+          + '(deshacer); Rechazada → Pendiente (deshacer). Quien pidió: Pendiente o Aceptada → Cancelada.',
       },
     },
   },
@@ -504,6 +520,23 @@ const paths = {
       responses: { 200: ok('Perfil actualizado', ref('User')), ...errors(400, 401, 403) },
     },
   },
+  '/users/me/status': {
+    patch: {
+      tags: ['Usuarios'],
+      summary: 'Dar de baja mi cuenta',
+      description: 'La cuenta queda "Inactivo": no puede iniciar sesión y sus publicaciones dejan de mostrarse. '
+        + 'Pide la contraseña actual. Un administrador puede reactivarla. La cuenta principal del administrador no se puede dar de baja.',
+      security: AUTH,
+      requestBody: body(ref('DeactivateInput'), { status: 'Inactivo', password: 'Usuario12345' }),
+      responses: {
+        204: { description: 'Cuenta dada de baja' },
+        400: errorResponse('Falta la contraseña o no es correcta', {
+          message: 'La contraseña no es correcta.', errors: { password: 'La contraseña no es correcta.' },
+        }),
+        ...errors(401, 403),
+      },
+    },
+  },
   '/users': {
     get: {
       tags: ['Usuarios'],
@@ -592,7 +625,7 @@ const paths = {
         condition: 'Como nuevo',
         description: 'Diccionario de bolsillo, casi sin uso.\n\nIdeal para el curso de inglés.',
         location: 'Chapinero',
-        photo: PNG,
+        photos: [PNG],
       }),
       responses: { 201: ok('Artículo publicado', ref('Item')), ...errors(400, 401, 403) },
     },
@@ -627,7 +660,7 @@ const paths = {
         condition: 'Usado',
         description: 'Artículo en buen estado, listo para entregar a quien lo necesite.',
         location: 'Chapinero',
-        photo: '/images/items/calculo.jpg',
+        photos: ['/images/items/calculo.jpg', PNG],
       }),
       responses: { 200: ok('Artículo actualizado', ref('Item')), ...errors(400, 401, 403, 404, 409) },
     },
@@ -648,7 +681,7 @@ const paths = {
     get: {
       tags: ['Solicitudes'],
       summary: 'Mis solicitudes',
-      description: 'Solicitudes que hizo el usuario con sesión. Las aceptadas incluyen los datos de contacto del dueño.',
+      description: 'Solicitudes que hizo el usuario con sesión. Las aceptadas y entregadas incluyen los datos de contacto del dueño.',
       security: AUTH,
       responses: { 200: ok('Mis solicitudes', arrayOf('MyRequest'), [MY_REQUEST_EXAMPLE]), ...errors(401, 403) },
     },
@@ -699,20 +732,29 @@ const paths = {
     },
     patch: {
       tags: ['Solicitudes'],
-      summary: 'Responder una solicitud recibida',
-      description: 'Solo el dueño del artículo. Aceptar pasa la publicación a "En proceso" (solo si está "Disponible"); '
-        + 'deshacer una aceptada (status "Pendiente") la devuelve a "Disponible".',
+      summary: 'Cambiar el estado de una solicitud',
+      description: 'El dueño del artículo acepta, rechaza, marca como entregada o cancela; quien pidió solo puede cancelar. '
+        + 'Aceptar pasa la publicación a "En proceso" (solo si está "Disponible"). Deshacer o cancelar una aceptada la devuelve a '
+        + '"Disponible". Entregar la pasa a "Entregado" y rechaza las demás solicitudes pendientes de ese artículo. '
+        + 'Responde como ReceivedRequest al dueño y como MyRequest a quien pidió.',
       security: AUTH,
-      parameters: [idParam('Id de la solicitud recibida', 'rr1')],
-      requestBody: body(ref('RequestStatusInput'), { status: 'Aceptada' }),
-      responses: { 200: ok('Solicitud actualizada', ref('ReceivedRequest')), ...errors(400, 401, 403, 404, 409) },
+      parameters: [idParam('Id de la solicitud', 'rr1')],
+      requestBody: bodyExamples(ref('RequestStatusInput'), {
+        aceptar: { summary: 'Dueño: aceptar', value: { status: 'Aceptada' } },
+        entregar: { summary: 'Dueño: marcar como entregada', value: { status: 'Entregada' } },
+        cancelar: { summary: 'Dueño o quien pidió: cancelar', value: { status: 'Cancelada' } },
+      }),
+      responses: {
+        200: { description: 'Solicitud actualizada', content: json({ oneOf: [ref('ReceivedRequest'), ref('MyRequest')] }) },
+        ...errors(400, 401, 403, 404, 409),
+      },
     },
     delete: {
       tags: ['Solicitudes'],
-      summary: 'Eliminar una solicitud recibida rechazada',
-      description: 'La quita de mi lista de recibidas. Quien la hizo la sigue viendo como "Rechazada".',
+      summary: 'Eliminar una solicitud recibida rechazada o cancelada',
+      description: 'La quita de mi lista de recibidas. Quien la hizo la sigue viendo con su estado.',
       security: AUTH,
-      parameters: [idParam('Id de la solicitud recibida (rechazada)', 'rr2')],
+      parameters: [idParam('Id de la solicitud recibida (rechazada o cancelada)', 'rr2')],
       responses: { 204: { description: 'Eliminada' }, ...errors(401, 403, 404, 409) },
     },
   },

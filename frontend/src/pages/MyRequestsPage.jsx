@@ -1,11 +1,34 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import ConfirmModal from '../components/admin/ConfirmModal.jsx';
 import RequestCard from '../components/requests/RequestCard.jsx';
-import useAsync from '../hooks/useAsync.js';
-import { getMyRequests } from '../services/requestsService.js';
+import useMyRequests from '../hooks/useMyRequests.js';
 
 export default function MyRequestsPage() {
-  const { data: requests, loading, error } = useAsync(getMyRequests);
+  const { items: requests, loading, error, cancel } = useMyRequests();
   const flash = useLocation().state?.message;
+  const [cancelling, setCancelling] = useState(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState('');
+
+  const closeCancel = () => {
+    if (cancelBusy) return;
+    setCancelling(null);
+    setCancelError('');
+  };
+
+  const confirmCancel = async () => {
+    setCancelBusy(true);
+    setCancelError('');
+    try {
+      await cancel(cancelling.id);
+      setCancelling(null);
+    } catch (err) {
+      setCancelError(err.message);
+    } finally {
+      setCancelBusy(false);
+    }
+  };
 
   return (
     <div className="page container-xl">
@@ -26,8 +49,34 @@ export default function MyRequestsPage() {
       )}
 
       <div className="req-list">
-        {requests?.map((r) => <RequestCard key={r.id} request={r} />)}
+        {requests.map((r) => <RequestCard key={r.id} request={r} onCancel={() => setCancelling(r)} />)}
       </div>
+
+      {cancelling && (
+        <ConfirmModal
+          title="¿Cancelar esta solicitud?"
+          confirmLabel="Cancelar solicitud"
+          busyLabel="Cancelando…"
+          cancelLabel="Volver"
+          danger
+          busy={cancelBusy}
+          error={cancelError}
+          onConfirm={confirmCancel}
+          onClose={closeCancel}
+        >
+          {cancelling.status === 'Aceptada' ? (
+            <p>
+              {cancelling.counterpart} ya aceptó tu solicitud. Si cancelas, <strong>{cancelling.title}</strong> vuelve
+              a quedar disponible para otras personas.
+            </p>
+          ) : (
+            <p>
+              Tu solicitud de <strong>{cancelling.title}</strong> quedará cancelada. Si cambias de opinión, puedes volver
+              a pedirlo mientras siga disponible.
+            </p>
+          )}
+        </ConfirmModal>
+      )}
     </div>
   );
 }

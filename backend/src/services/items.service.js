@@ -1,4 +1,4 @@
-import { CONDITIONS, LOCALITIES, MAX_ITEM_PHOTO_CHARS } from '../constants.js';
+import { CONDITIONS, LOCALITIES, MAX_ITEM_PHOTOS, MAX_ITEM_PHOTO_CHARS } from '../constants.js';
 import { Category } from '../models/category.model.js';
 import { Item } from '../models/item.model.js';
 import { User } from '../models/user.model.js';
@@ -25,11 +25,11 @@ async function readItemInput(body = {}, current) {
   const condition = String(body.condition ?? '');
   const descriptionText = Array.isArray(body.description) ? body.description.join('\n\n') : String(body.description ?? '');
   const location = String(body.location ?? '');
-  const photo = body.photo ?? '';
+  const photos = [...new Set([body.photos ?? []].flat().filter((p) => typeof p === 'string' && p !== ''))];
 
   const category = categoryName ? await Category.findByName(categoryName) : null;
   const keepsCurrentCategory = current && category && current.categoryId === category.id;
-  const photoUnchanged = current && photo === current.images[0];
+  const newPhotos = photos.filter((p) => !current?.images.includes(p));
 
   let categoryError = '';
   if (!categoryName) categoryError = 'Selecciona una categoría.';
@@ -37,9 +37,10 @@ async function readItemInput(body = {}, current) {
   else if (category.status !== 'Activa' && !keepsCurrentCategory) categoryError = 'La categoría está inactiva.';
 
   let photoError = '';
-  if (!photo) photoError = 'Agrega una fotografía del artículo.';
-  else if (!photoUnchanged && !isImageDataUrl(photo)) photoError = 'Solo se permiten imágenes JPG o PNG.';
-  else if (!photoUnchanged && photo.length > MAX_ITEM_PHOTO_CHARS) photoError = 'La imagen debe pesar máximo 5 MB.';
+  if (!photos.length) photoError = 'Agrega al menos una fotografía del artículo.';
+  else if (photos.length > MAX_ITEM_PHOTOS) photoError = `Puedes subir máximo ${MAX_ITEM_PHOTOS} fotografías.`;
+  else if (!newPhotos.every(isImageDataUrl)) photoError = 'Solo se permiten imágenes JPG o PNG.';
+  else if (newPhotos.some((p) => p.length > MAX_ITEM_PHOTO_CHARS)) photoError = 'Cada imagen debe pesar máximo 5 MB.';
 
   throwIfErrors({
     title: !title ? 'Este campo es obligatorio.' : title.length > 80 ? 'Máximo 80 caracteres.' : '',
@@ -47,7 +48,7 @@ async function readItemInput(body = {}, current) {
     condition: CONDITIONS.includes(condition) ? '' : 'Selecciona el estado.',
     description: descriptionText.trim().length >= 20 ? '' : 'Describe el artículo en al menos 20 caracteres.',
     location: LOCALITIES.includes(location) ? '' : 'Selecciona la ubicación de entrega.',
-    photo: photoError,
+    photos: photoError,
   });
 
   return {
@@ -56,7 +57,7 @@ async function readItemInput(body = {}, current) {
     condition,
     description: toParagraphs(descriptionText),
     location,
-    ...(photoUnchanged ? {} : { images: [photo] }),
+    images: photos,
   };
 }
 

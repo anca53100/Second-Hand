@@ -92,6 +92,20 @@ Content-Type: application/json
   "location": "Teusaquillo"
 }
 
+### Dar de baja mi cuenta con la contraseña equivocada (400)
+PATCH {{baseUrl}}/users/me/status
+Authorization: Bearer {{ana}}
+Content-Type: application/json
+
+{ "status": "Inactivo", "password": "NoEsMiClave1" }
+
+### La cuenta principal del administrador no se puede dar de baja (403)
+PATCH {{baseUrl}}/users/me/status
+Authorization: Bearer {{admin}}
+Content-Type: application/json
+
+{ "status": "Inactivo", "password": "Admin12345" }
+
 ### Lista de usuarios como usuaria (403: solo administrador)
 GET {{baseUrl}}/users
 Authorization: Bearer {{ana}}
@@ -140,7 +154,7 @@ Content-Type: application/json
   "condition": "Como nuevo",
   "description": "Diccionario de bolsillo, casi sin uso.\n\nIdeal para el curso de inglés.",
   "location": "Chapinero",
-  "photo": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+  "photos": ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="]
 }
 
 ### Publicar en una categoría inactiva (400)
@@ -154,10 +168,10 @@ Content-Type: application/json
   "condition": "Usado",
   "description": "Guitarra acústica con funda, le falta una cuerda.",
   "location": "Chapinero",
-  "photo": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+  "photos": ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="]
 }
 
-### Editar mi publicación (enviar la URL de la foto actual la conserva)
+### Editar mi publicación (enviar la URL de una foto actual la conserva; la primera es la portada)
 PUT {{baseUrl}}/items/{{anaCalculo}}
 Authorization: Bearer {{ana}}
 Content-Type: application/json
@@ -168,7 +182,7 @@ Content-Type: application/json
   "condition": "Usado",
   "description": "Artículo en buen estado, listo para entregar a quien lo necesite.",
   "location": "Chapinero",
-  "photo": "/images/items/calculo.jpg"
+  "photos": ["/images/items/calculo.jpg"]
 }
 
 ### Editar una publicación ajena (403)
@@ -189,7 +203,7 @@ Content-Type: application/json
   "condition": "Como nuevo",
   "description": "Artículo en buen estado, listo para entregar a quien lo necesite.",
   "location": "Chapinero",
-  "photo": "/images/items/calculadora.jpg"
+  "photos": ["/images/items/calculadora.jpg"]
 }
 
 ### Activar mi publicación inactiva
@@ -249,6 +263,13 @@ Content-Type: application/json
 
 { "status": "Aceptada" }
 
+### Ana cancela su solicitud ya aceptada (el artículo vuelve a "Disponible")
+PATCH {{baseUrl}}/requests/{{solicitud.response.body.$.id}}
+Authorization: Bearer {{ana}}
+Content-Type: application/json
+
+{ "status": "Cancelada" }
+
 ### Solicitudes que recibió Ana sobre sus publicaciones
 GET {{baseUrl}}/requests/received
 Authorization: Bearer {{ana}}
@@ -267,9 +288,30 @@ Content-Type: application/json
 
 { "status": "Pendiente" }
 
-### Eliminar una solicitud pendiente (409: solo se eliminan las rechazadas)
+### Eliminar una solicitud pendiente (409: solo se eliminan las rechazadas o canceladas)
 DELETE {{baseUrl}}/requests/{{recibidaPendiente}}
 Authorization: Bearer {{ana}}
+
+### Aceptarla otra vez
+PATCH {{baseUrl}}/requests/{{recibidaPendiente}}
+Authorization: Bearer {{ana}}
+Content-Type: application/json
+
+{ "status": "Aceptada" }
+
+### Marcar como entregada (el artículo pasa a "Entregado" y las demás pendientes se rechazan)
+PATCH {{baseUrl}}/requests/{{recibidaPendiente}}
+Authorization: Bearer {{ana}}
+Content-Type: application/json
+
+{ "status": "Entregada" }
+
+### Una entregada no se puede deshacer (409)
+PATCH {{baseUrl}}/requests/{{recibidaPendiente}}
+Authorization: Bearer {{ana}}
+Content-Type: application/json
+
+{ "status": "Pendiente" }
 
 ### Eliminar la solicitud rechazada de Miguel (204)
 DELETE {{baseUrl}}/requests/{{recibidaRechazada}}

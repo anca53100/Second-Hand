@@ -19,6 +19,10 @@ export function updateProfile(changes) {
   return apiFetch('/users/me', { method: 'PUT', body: changes });
 }
 
+export async function deactivateAccount(password) {
+  await apiFetch('/users/me/status', { method: 'PATCH', body: { status: 'Inactivo', password } });
+}
+
 export function requestPasswordReset({ email }) {
   return apiFetch('/auth/forgot-password', { method: 'POST', body: { email } });
 }

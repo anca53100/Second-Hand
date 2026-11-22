@@ -26,6 +26,7 @@ export function serializeMe(user, stats) {
     photo: user.photo ?? null,
     instagram: user.instagram,
     role: user.role,
+    isMainAdmin: user.email === ADMIN_EMAIL,
     status: user.status,
     memberSince: toBogotaDate(user.createdAt),
     stats,
@@ -77,7 +78,15 @@ const NOTES = {
   Pendiente: 'Esperando respuesta del donante. Recibirás una notificación cuando haya novedad.',
   Aceptada: 'Tu solicitud fue aceptada. Contacta al miembro para coordinar la entrega.',
   Rechazada: 'El artículo ya no está disponible o el donante no pudo atender tu solicitud.',
+  Entregada: 'El donante marcó el artículo como entregado.',
 };
+
+const CANCEL_NOTES = {
+  requester: 'Cancelaste esta solicitud.',
+  owner: 'El donante canceló la entrega.',
+};
+
+const WITH_CONTACT = ['Aceptada', 'Entregada'];
 
 export function serializeMyRequest(request) {
   const { item, owner } = request;
@@ -90,11 +99,12 @@ export function serializeMyRequest(request) {
     counterpart: owner?.name ?? '',
     date: toBogotaDate(request.createdAt),
     status: request.status,
-    note: NOTES[request.status],
+    cancelledBy: request.cancelledBy ?? null,
+    note: request.status === 'Cancelada' ? CANCEL_NOTES[request.cancelledBy] : NOTES[request.status],
     message: request.message,
     offeredTitle: request.offeredTitle ?? null,
   };
-  if (request.status === 'Aceptada' && owner) {
+  if (WITH_CONTACT.includes(request.status) && owner) {
     data.acceptedAt = toBogotaDate(request.acceptedAt);
     data.contact = {
       name: owner.name,
@@ -120,6 +130,7 @@ export function serializeReceivedRequest(request) {
     type: request.type,
     offeredTitle: request.offeredTitle ?? null,
     status: request.status,
+    cancelledBy: request.cancelledBy ?? null,
     message: request.message,
     date: toBogotaDate(request.createdAt),
   };

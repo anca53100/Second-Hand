@@ -191,7 +191,7 @@ export async function seedDatabase({ adminPassword, userPassword, now = Date.now
     ownerId: 'u0',
     type: 'Donación',
     message: '',
-    status: 'Aceptada',
+    status: 'Entregada',
     acceptedAt: bogota('2026-09-05'),
     createdAt: bogota('2026-09-04'),
   });

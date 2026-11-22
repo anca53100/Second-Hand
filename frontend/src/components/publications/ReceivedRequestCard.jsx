@@ -1,16 +1,17 @@
 import Avatar from '../Avatar.jsx';
 import Chip from '../Chip.jsx';
 
-const STATUS_VARIANT = { Pendiente: 'yellow', Aceptada: 'green', Rechazada: 'red' };
+const STATUS_VARIANT = { Pendiente: 'yellow', Aceptada: 'green', Rechazada: 'red', Cancelada: 'grey', Entregada: 'green' };
 
-export default function ReceivedRequestCard({ request, busy, onRespond, onDelete }) {
-  const { id, requester, type, offeredTitle, itemTitle, itemImage, message, status } = request;
-  const accepted = status === 'Aceptada';
+export default function ReceivedRequestCard({ request, busy, onRespond, onDelete, onConfirm }) {
+  const { id, requester, type, offeredTitle, itemTitle, itemImage, message, status, cancelledBy } = request;
+  const past = status !== 'Pendiente' && status !== 'Rechazada';
 
   const action = type === 'Donación'
-    ? (accepted ? 'pidió en donación' : 'pide en donación')
-    : (accepted ? 'propuso un intercambio' : 'propone un intercambio');
+    ? (past ? 'pidió en donación' : 'pide en donación')
+    : (past ? 'propuso un intercambio' : 'propone un intercambio');
   const subject = type === 'Intercambio' && offeredTitle ? `${itemTitle}, ofrece ${offeredTitle}` : itemTitle;
+  const firstName = requester.name.split(' ')[0];
 
   return (
     <article className="req rcv">
@@ -23,6 +24,9 @@ export default function ReceivedRequestCard({ request, busy, onRespond, onDelete
           {requester.name} {action} <span className="rcv__item">{subject}</span>
         </h2>
         {message && <p className="rcv__msg">“{message}”</p>}
+        {status === 'Cancelada' && (
+          <p className="rcv__status">{cancelledBy === 'requester' ? `${firstName} canceló la solicitud.` : 'Cancelaste esta entrega.'}</p>
+        )}
       </div>
 
       <div className="req__actions">
@@ -30,7 +34,7 @@ export default function ReceivedRequestCard({ request, busy, onRespond, onDelete
 
         {status === 'Pendiente' && (
           <>
-            <button type="button" className="btn btn-sh btn-sm" disabled={busy} onClick={() => onRespond(id, 'Aceptada')}>Aceptar</button>
+            <button type="button" className="btn btn-sh btn-sm" disabled={busy} onClick={() => onConfirm(request, 'Aceptada')}>Aceptar</button>
             <button type="button" className="btn btn-sh-outline btn-sm" disabled={busy} onClick={() => onRespond(id, 'Rechazada')}>Rechazar</button>
           </>
         )}
@@ -40,8 +44,15 @@ export default function ReceivedRequestCard({ request, busy, onRespond, onDelete
             <button type="button" className="btn btn-sh-outline btn-sm" disabled={busy} onClick={() => onRespond(id, 'Pendiente')}>Deshacer</button>
           </>
         )}
-        {accepted && (
-          <button type="button" className="btn btn-sh-outline btn-sm" disabled={busy} onClick={() => onRespond(id, 'Pendiente')}>Deshacer</button>
+        {status === 'Aceptada' && (
+          <>
+            <button type="button" className="btn btn-sh btn-sm" disabled={busy} onClick={() => onConfirm(request, 'Entregada')}>Marcar como entregado</button>
+            <button type="button" className="btn btn-danger-outline btn-sm" disabled={busy} onClick={() => onConfirm(request, 'Cancelada')}>Cancelar entrega</button>
+            <button type="button" className="btn btn-sh-outline btn-sm" disabled={busy} onClick={() => onRespond(id, 'Pendiente')}>Deshacer</button>
+          </>
+        )}
+        {status === 'Cancelada' && (
+          <button type="button" className="btn btn-sh-outline btn-sm" disabled={busy} onClick={() => onDelete(id)}>Eliminar</button>
         )}
       </div>
     </article>

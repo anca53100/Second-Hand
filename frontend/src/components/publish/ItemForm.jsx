@@ -24,7 +24,7 @@ export default function ItemForm({ item }) {
     condition: v.condition ? '' : 'Selecciona el estado.',
     description: v.description.trim().length >= 20 ? '' : 'Describe el artículo en al menos 20 caracteres.',
     location: v.location ? '' : 'Selecciona la ubicación de entrega.',
-    photo: v.photo ? '' : 'Agrega una fotografía del artículo.',
+    photos: v.photos.length ? '' : 'Agrega al menos una fotografía del artículo.',
   });
 
   const { values, errors, submitError, submitting, handleChange, setValue, handleSubmit } = useForm(
@@ -34,7 +34,7 @@ export default function ItemForm({ item }) {
       condition: item?.condition ?? '',
       description: item ? item.description.join('\n\n') : '',
       location: item?.location ?? user?.location ?? '',
-      photo: item?.image ?? '',
+      photos: item?.images ?? [],
     },
     validate,
     async (v) => {
@@ -50,8 +50,8 @@ export default function ItemForm({ item }) {
   return (
     <form className="publish-grid" onSubmit={handleSubmit} noValidate>
       <section className="card-sh field-light publish-grid__photo" aria-labelledby="photo-title">
-        <h2 id="photo-title" className="photo__label">Fotografía</h2>
-        <PhotoUploader value={values.photo} onChange={(url) => setValue('photo', url)} error={errors.photo} />
+        <h2 id="photo-title" className="photo__label">Fotografías</h2>
+        <PhotoUploader value={values.photos} onChange={(list) => setValue('photos', list)} error={errors.photos} />
       </section>
 
       <section className="card-sh field-light publish-grid__form" aria-label="Datos del artículo">

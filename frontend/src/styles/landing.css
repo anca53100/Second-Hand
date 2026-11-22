@@ -52,5 +52,5 @@
 .sh-how__step p { color: var(--sh-text-muted); font-size: 0.875rem; margin: 0; }
 
 .sh-footer { background: var(--sh-green); color: #fff; padding: 1.5rem 0; font-size: 0.8125rem; }
-.sh-footer__brand { font-weight: 600; font-size: 0.9375rem; }
-.sh-footer__copy { opacity: 0.75; margin-top: 0.25rem; }
+.sh-footer__logo { display: block; height: 22px; width: auto; }
+.sh-footer__copy { opacity: 0.75; margin-top: 0.6rem; }

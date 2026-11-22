@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Avatar from '../components/Avatar.jsx';
+import ConfirmModal from '../components/admin/ConfirmModal.jsx';
 import FormField from '../components/auth/FormField.jsx';
 import useForm from '../hooks/useForm.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { deactivateAccount } from '../services/authService.js';
 import { localities } from '../data/localities.js';
 import { required, validatePhone } from '../utils/validators.js';
 import { formatMonthYear } from '../utils/format.js';
@@ -65,6 +67,35 @@ export default function ProfilePage() {
 
   const handleLogout = () => { logout(); navigate('/'); };
 
+  const [leaving, setLeaving] = useState(false);
+  const [leavePassword, setLeavePassword] = useState('');
+  const [leaveError, setLeaveError] = useState({});
+  const [leaveBusy, setLeaveBusy] = useState(false);
+
+  const closeLeave = () => {
+    if (leaveBusy) return;
+    setLeaving(false);
+    setLeavePassword('');
+    setLeaveError({});
+  };
+
+  const confirmLeave = async () => {
+    if (!leavePassword) { setLeaveError({ field: 'Escribe tu contraseña para confirmar.' }); return; }
+    setLeaveBusy(true);
+    setLeaveError({});
+    try {
+      await deactivateAccount(leavePassword);
+      logout();
+      navigate('/login', {
+        replace: true,
+        state: { notice: 'Diste de baja tu cuenta. Tus publicaciones ya no se muestran en Second Hand.' },
+      });
+    } catch (err) {
+      setLeaveError(err.errors?.password ? { field: err.errors.password } : { general: err.message });
+      setLeaveBusy(false);
+    }
+  };
+
   return (
     <div className="page container-xl">
       <div className="page__head">
@@ -117,7 +148,40 @@ export default function ProfilePage() {
           <p>Tu sesión actual se cerrará y tendrás que iniciar sesión nuevamente para acceder a tu cuenta.</p>
           <button type="button" className="btn btn-danger-outline btn-sm" onClick={handleLogout}>Cerrar sesión</button>
         </section>
+
+        {!user.isMainAdmin && (
+          <section className="card-sh danger profile-grid__full" aria-labelledby="leave-title">
+            <h2 id="leave-title">Dar de baja mi cuenta</h2>
+            <p>
+              Tu cuenta quedará inactiva: no podrás iniciar sesión y tus publicaciones dejarán de mostrarse.
+              Si cambias de opinión, un administrador puede reactivarla.
+            </p>
+            <button type="button" className="btn btn-danger-outline btn-sm" onClick={() => setLeaving(true)}>
+              Dar de baja mi cuenta
+            </button>
+          </section>
+        )}
       </div>
+
+      {leaving && (
+        <ConfirmModal
+          title="¿Dar de baja tu cuenta?"
+          confirmLabel="Dar de baja"
+          busyLabel="Dando de baja…"
+          cancelLabel="Volver"
+          danger
+          autoFocusCancel={false}
+          busy={leaveBusy}
+          error={leaveError.general}
+          onConfirm={confirmLeave}
+          onClose={closeLeave}
+        >
+          <p>No podrás volver a iniciar sesión y tus publicaciones dejarán de verse.</p>
+          <FormField id="leave-password" label="Escribe tu contraseña para confirmar" type="password"
+                     autoComplete="current-password" autoFocus value={leavePassword} error={leaveError.field}
+                     onChange={(e) => { setLeavePassword(e.target.value); setLeaveError({}); }} />
+        </ConfirmModal>
+      )}
     </div>
   );
 }

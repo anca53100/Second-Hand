@@ -13,7 +13,7 @@ export default function ContactProfilePage() {
   if (loading) return <div className="page container-xl"><p role="status">Cargando…</p></div>;
   if (error) return <div className="page container-xl"><p role="alert" className="text-danger">{error}</p></div>;
 
-  if (!request || request.status !== 'Aceptada') {
+  if (!request || !['Aceptada', 'Entregada'].includes(request.status)) {
     return (
       <div className="page container-xl">
         <h1 className="detail__title">Este contacto no está disponible</h1>

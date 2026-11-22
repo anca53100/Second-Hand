@@ -8,6 +8,11 @@ export async function updateMe(req, res) {
   res.json(await usersService.updateMe(req.user, req.body ?? {}));
 }
 
+export async function deactivateMe(req, res) {
+  await usersService.deactivateMe(req.user, req.body ?? {});
+  res.status(204).end();
+}
+
 export async function listUsers(req, res) {
   res.json(await usersService.listUsers(req.query));
 }

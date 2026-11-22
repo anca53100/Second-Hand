@@ -7,7 +7,7 @@ const toBody = (data) => ({
   condition: data.condition,
   location: data.location,
   description: data.description,
-  photo: data.photo,
+  photos: data.photos,
 });
 
 export function getMyItems() {

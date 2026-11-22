@@ -1,5 +1,5 @@
 import { model } from 'mongoose';
-import { REQUEST_STATUS, REQUEST_TYPES } from '../constants.js';
+import { REQUEST_ROLES, REQUEST_STATUS, REQUEST_TYPES } from '../constants.js';
 import { belongsTo, createSchema } from './base.js';
 
 const requestSchema = createSchema({
@@ -12,6 +12,7 @@ const requestSchema = createSchema({
   message: { type: String, default: '' },
   status: { type: String, enum: REQUEST_STATUS, default: 'Pendiente' },
   acceptedAt: { type: Date, default: null },
+  cancelledBy: { type: String, enum: REQUEST_ROLES, default: null },
   hiddenForOwner: { type: Boolean, default: false },
 });
 

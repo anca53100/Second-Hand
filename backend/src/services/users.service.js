@@ -49,6 +49,23 @@ export async function updateMe(user, body = {}) {
   return serializeMe(user, await getUserStats(user.id));
 }
 
+export async function deactivateMe(user, body = {}) {
+  const password = String(body.password ?? '');
+  throwIfErrors({
+    status: body.status === 'Inactivo' ? '' : 'Para dar de baja tu cuenta envía el estado "Inactivo".',
+    password: password ? '' : 'Escribe tu contraseña para confirmar.',
+  });
+  if (user.email === ADMIN_EMAIL) {
+    throw new HttpError(403, 'La cuenta principal del administrador no se puede dar de baja.');
+  }
+  if (!(await user.checkPassword(password))) {
+    throw new HttpError(400, 'La contraseña no es correcta.', { password: 'La contraseña no es correcta.' });
+  }
+
+  user.status = 'Inactivo';
+  await user.save();
+}
+
 export async function listUsers(query = {}) {
   const limit = Number.parseInt(query.limit, 10);
   const filter = query.email === undefined ? {} : { email: String(query.email).trim().toLowerCase() };
