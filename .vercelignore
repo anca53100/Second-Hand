@@ -1,0 +1,13 @@
+# Evita que `vercel` (CLI) suba archivos locales al desplegar.
+# Las variables de producción se configuran en Vercel (Settings → Environment Variables).
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+
+node_modules
+**/node_modules
+dist
+**/dist
+.vercel
