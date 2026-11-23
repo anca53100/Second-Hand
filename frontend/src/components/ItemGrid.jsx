@@ -17,7 +17,7 @@ export default function ItemGrid() {
 
         <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3">
           {items.map((item) => (
-            <div className="col" key={item.id}><ItemCard item={item} /></div>
+            <div className="col" key={item.id}><ItemCard item={item} to="/registro" /></div>
           ))}
         </div>
       </div>
