@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/auth/AuthLayout.jsx';
 import FormField from '../components/auth/FormField.jsx';
 import useForm from '../hooks/useForm.js';
@@ -54,6 +54,8 @@ export default function RegisterPage() {
         <button type="submit" className="btn auth__submit" disabled={submitting}>
           {submitting ? 'Creando cuenta…' : 'Crear cuenta'}
         </button>
+
+        <p className="auth__link-center">¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link></p>
       </form>
     </AuthLayout>
   );
